@@ -1,6 +1,6 @@
 <?php
 
-  // deltwitter v0.0.0.0.0.0.0.0.0.1
+  // deltwitter v0.0.0.0.0.0.0.0.0.2
   //
   // Copyright (c) 2016, Kenneth Newwood
   // All rights reserved.
@@ -51,6 +51,12 @@
   // * This script does not care to escape any values, be it parts of URLs,
   //   HTTP headers or even shell parameters. You'd be totally stupid to
   //   call this script with untrusted parameters. You've been warned.
+  // * Twitter actually fucked up the retweet feature. It so happens that
+  //   tweets you retweeted some time ago are added to your tweet count,
+  //   archive and timeline, but cannot be easily unretweeted. The only
+  //   way seems to be to retweet these tweets again and directly unretweet
+  //   them. This, however, leads to annoying glitches in all sorts of twitter
+  //   clients, which is the reason why unretweeting of tweets is throttled.
   // * This script was written with the intention to be a lowest-effort
   //   approach to automating the deletion of tweets and retweets. If
   //   it breaks anything, it's up to you to fix it. There will be
@@ -63,26 +69,31 @@
   // configure by knowledge
   define("USERNAME", ""); // this is meant to contain your twitter username in all lowercase
 
+  // configure by desire
+  define("UNRETWEET_THROTTLE", 60); // this meant to contain the number of seconds between unretweets
+
   // configure according to logged in browser headers
-  define("_GA",                ""); // this is meant to contain the "_ga" cookie value
   define("_TWITTER_SESS",      ""); // this is meant to contain the "_twitter_sess" cookie value
   define("AUTH_TOKEN",         ""); // this is meant to contain the "auth_token" cookie value
   define("AUTHENTICITY_TOKEN", ""); // this is meant to contain the "authenticity_token" post data value
   define("KDT",                ""); // this is meant to contain the "kdt" cookie value
   define("GUEST_ID",           ""); // this is meant to contain the "guest_id" cookie value
-  define("TWID",               ""); // this is meant to contain the "twid" cookie value
+  define("TWID",               "\\\"u=\\\""); // this is meant to contain the "twid" cookie value
   define("USER_AGENT",         ""); // this is meant to contain a normal-looking user-agent string
 
   // ========== STOP EDITING HERE IF YOU DO NOT KNOW WHAT YOU ARE DOING ==========
 
   // static definitions of placeholders
-  define("ID_PLACEHOLDER",   "<%ID%>");
-  define("REFERER_REPLACER", "<%REFERER%>");
-  define("URL_PLACEHOLDER",  "<%URL%>");
+  define("ID_PLACEHOLDER",      "<%ID%>");
+  define("METHOD_PLACEHOLDER",  "<%METHOD%>");
+  define("REFERER_PLACEHOLDER", "<%REFERER%>");
+  define("URL_PLACEHOLDER",     "<%URL%>");
 
   // static definitions of URLs
   define("DELETE_REFERER",    USERNAME."/status/<%ID%>");
   define("DELETE_URL",        "https://twitter.com/i/tweet/destroy");
+  define("RETWEET_REFERER",   "");
+  define("RETWEET_URL",       "https://twitter.com/i/tweet/retweet");
   define("UNRETWEET_REFERER", "");
   define("UNRETWEET_URL",     "https://twitter.com/i/tweet/unretweet");
 
@@ -90,7 +101,7 @@
   define("SUCCESS_CODE", "200");
 
   // static definition of command
-  define("COMMAND", "curl -s -o /dev/null -w \"%{http_code}\" -X POST -A \"".USER_AGENT."\" -H \"content-type: application/x-www-form-urlencoded; charset=UTF-8\" -H \"x-requested-with: XMLHttpRequest\" -H \"cookie: guest_id=".GUEST_ID."\" -H \"cookie: _ga="._GA."\" -H \"cookie: eu_cn=1\" -H \"cookie: kdt=".KDT."\" -H \"cookie: remember_checked_on=1\" -H \"cookie: twid=\\\"u=".TWID."\\\"\" -H \"cookie: auth_token=".AUTH_TOKEN."\" -H \"cookie: _gat=1\" -H \"cookie: _twitter_sess="._TWITTER_SESS."\" -e \"https://twitter.com/".REFERER_PLACEHOLDER."\" -d \"_method=DELETE&authenticity_token=".AUTHENTICITY_TOKEN."&id=".ID_PLACEHOLDER."\" \"".URL_PLACEHOLDER."\"");
+  define("COMMAND", "curl -s -o /dev/null -w \"%{http_code}\" -X POST -A \"".USER_AGENT."\" -H \"content-type: application/x-www-form-urlencoded; charset=UTF-8\" -H \"x-requested-with: XMLHttpRequest\" -H \"cookie: guest_id=".GUEST_ID."\" -H \"cookie: eu_cn=1\" -H \"cookie: kdt=".KDT."\" -H \"cookie: remember_checked_on=1\" -H \"cookie: twid=".TWID."\" -H \"cookie: auth_token=".AUTH_TOKEN."\" -H \"cookie: _gat=1\" -H \"cookie: _twitter_sess="._TWITTER_SESS."\" -e \"https://twitter.com/".REFERER_PLACEHOLDER."\" -d \"_method=DELETE&authenticity_token=".AUTHENTICITY_TOKEN."&id=".ID_PLACEHOLDER."\" \"".URL_PLACEHOLDER."\"");
 
   // static definitions of special characters
   define("NF", ",");  // new field
@@ -114,9 +125,14 @@
     return (0 === strcasecmp(shell_exec(getDeleteCommand($id)), SUCCESS_CODE));
   }
 
+  function doRetweet($id) {
+    return (0 === strcasecmp(shell_exec(getRetweetCommand($id)), SUCCESS_CODE));
+  }
+
   function doUnretweet($id) {
     return (0 === strcasecmp(shell_exec(getUnretweetCommand($id)), SUCCESS_CODE));
   }
+
 
   function getDeleteCommand($id) {
     return str_ireplace(URL_PLACEHOLDER,
@@ -125,6 +141,16 @@
                                      $id,
                                      str_ireplace(REFERER_PLACEHOLDER,
                                                   DELETE_REFERER,
+                                                  COMMAND)));
+  }
+
+  function getRetweetCommand($id) {
+    return str_ireplace(URL_PLACEHOLDER,
+                        RETWEET_URL,
+                        str_ireplace(ID_PLACEHOLDER,
+                                     $id,
+                                     str_ireplace(REFERER_PLACEHOLDER,
+                                                  RETWEET_REFERER,
                                                   COMMAND)));
   }
 
@@ -197,105 +223,110 @@
     $entry = array();
 
     // loop state
-    $break     = false;
-    $field     = "";
-    $in_string = false;
+    $break       = false;
+    $end_of_file = false;
+    $field       = "";
+    $in_string   = false;
 
     do {
       next_char();
 
-      if (null !== $cur) {
-        if ($in_string) {
-          switch ($cur) {
-            // a string identifier may either end the string or just be escaped by a second string identifier
-            case SI: {
-              switch ($nex) {
-                // check if the character that follows finalizes the field or the record
-                case NF:
-                case NL: {
-                  // we've finished the string
-                  $in_string = false;
+      if ($in_string) {
+        switch ($cur) {
+          // a string identifier may either end the string or just be escaped by a second string identifier
+          case SI: {
+            switch ($nex) {
+              // check if the character that follows finalizes the field or the record
+              case null:
+              case NF:
+              case NL: {
+                // we've finished the string
+                $in_string = false;
 
-                  break;
-                }
-
-                // check if the character that follows is also a string identifier
-                case SI: {
-                  // escape the string identifier
-                  $field .= $cur;
-
-                  // ignore the next character
-                  next_char();
-
-                  break;
-                }
-
-                // everything else is an error
-                default: {
-                  $break = true;
-                }
+                break;
               }
 
-              break;
-            }
+              // check if the character that follows is also a string identifier
+              case SI: {
+                // escape the string identifier
+                $field .= $cur;
 
-            // by default add character to the field
-            default: {
-              $field .= $cur;
-            }
-          }
-        } else {
-          switch ($cur) {
-            // a comma outside a string represents a new field
-            case NF: {
-              // set entry field
-              $entry[field_name(count($entry))] = $field;
-            
-              // start a new field
-              $field = "";
+                // ignore the next character
+                next_char();
 
-              break;
-            }
+                break;
+              }
 
-            // a newline outside a string ends the record
-            case NL: {
-              // set entry field
-              $entry[field_name(count($entry))] = $field;
-
-              // start a new field
-              $field = "";
-
-              $break = true;
-              break;
-            }
-
-            // a string identifier starts a string
-            case SI: {
-              // start the string
-              $in_string = true;
-
-              // when the current field is not empty, we have an error
-              if (0 < strlen($field)) {
+              // everything else is an error
+              default: {
                 $break = true;
               }
-
-              break;
             }
 
-            // by default add character to the field
-            default: {
-              $field .= $cur;
-            }
+            break;
+          }
+
+          // by default add character to the field
+          default: {
+            $field .= $cur;
           }
         }
       } else {
-        // break when there is no next character
-        $break = true;
-      } 
+        switch ($cur) {
+          // a comma outside a string represents a new field
+          case NF: {
+            // set entry field
+            $entry[field_name(count($entry))] = $field;
+            
+            // start a new field
+            $field = "";
+
+            break;
+          }
+
+          // a newline or EOF outside a string ends the record
+          case null:
+          case NL: {
+            // check if the line did not contain any values
+            if ((null === $cur) &&
+                (0 === count($entry)) &&
+                (0 === strlen($field))) {
+              // kill the main loop
+              $end_of_file = true;
+            } else {
+              // set entry field
+              $entry[field_name(count($entry))] = $field;
+
+              // start a new field
+              $field = "";
+            }
+
+            $break = true;
+            break;
+          }
+
+          // a string identifier starts a string
+          case SI: {
+            // start the string
+            $in_string = true;
+
+            // when the current field is not empty, we have an error
+            if (0 < strlen($field)) {
+              $break = true;
+            }
+
+            break;
+          }
+
+          // by default add character to the field
+          default: {
+            $field .= $cur;
+          }
+        }
+      }
     } while (!$break);
 
-    // read fails when we end within a string
-    return (!$in_string);
+    return (!($in_string || $end_of_file));
   }
 
   function main($arguments) {
@@ -329,14 +360,27 @@
           // iterate through all records
           while (next_record()) {
             // when "retweeted_status_id" field is not empty, it's a retweet
-            if (0 < strlen($entry[RETWEETED_STATUS_ID_FIELD])) {
+            if (isset($entry[RETWEETED_STATUS_ID_FIELD]) && (0 < strlen($entry[RETWEETED_STATUS_ID_FIELD]))) {
               // check if we're ready to work
               if ($started) {
                 // undo the retweet
                 if (doUnretweet($entry[RETWEETED_STATUS_ID_FIELD])) {
                   print("RETWEET: ".$entry[RETWEETED_STATUS_ID_FIELD]."\n");
                 } else {
-                  print(" FAILED: ".$entry[RETWEETED_STATUS_ID_FIELD]."\n");
+                  // try to retweet and unretweet to clean things up
+                  if (doRetweet($entry[RETWEETED_STATUS_ID_FIELD])) {
+                    // and directly undo the retweet
+                    if (doUnretweet($entry[RETWEETED_STATUS_ID_FIELD])) {
+                      print("RETWEET: ".$entry[RETWEETED_STATUS_ID_FIELD]."\n");
+                    } else {
+                      print(" FAILED: ".$entry[RETWEETED_STATUS_ID_FIELD]."\n");
+                    }
+
+                    // throttle this to be less annoying
+                    sleep(UNRETWEET_THROTTLE);
+                  } else {
+                    print(" FAILED: ".$entry[RETWEETED_STATUS_ID_FIELD]."\n");
+                  }
                 }
               } else {
                 // check if we've reached the ID to resume
@@ -349,23 +393,28 @@
                 }
               }
             } else {
-              // check if we're ready to work
-              if ($started) {
-                // delete the tweet
-                if (doDelete($entry[TWEET_ID_FIELD])) {
-                  print("  TWEET: ".$entry[TWEET_ID_FIELD]."\n");
+              // when "tweet_id" field is not empty, it's a tweet
+              if (isset($entry[TWEET_ID_FIELD]) && (0 < strlen($entry[TWEET_ID_FIELD]))) {
+                // check if we're ready to work
+                if ($started) {
+                  // delete the tweet
+                  if (doDelete($entry[TWEET_ID_FIELD])) {
+                    print("  TWEET: ".$entry[TWEET_ID_FIELD]."\n");
+                  } else {
+                    print(" FAILED: ".$entry[TWEET_ID_FIELD]."\n");
+                  }
                 } else {
-                  print(" FAILED: ".$entry[TWEET_ID_FIELD]."\n");
+                  // check if we've reached the ID to resume
+                  $started = (0 === strcasecmp($start_id, $entry[TWEET_ID_FIELD]));
+
+                  if ($started) {
+                    print("RESUMED: ".$entry[TWEET_ID_FIELD]."\n");
+                  } else {
+                    print("IGNORED: ".$entry[TWEET_ID_FIELD]."\n");
+                  }
                 }
               } else {
-                // check if we've reached the ID to resume
-                $started = (0 === strcasecmp($start_id, $entry[TWEET_ID_FIELD]));
-
-                if ($started) {
-                  print("RESUMED: ".$entry[TWEET_ID_FIELD]."\n");
-                } else {
-                  print("IGNORED: ".$entry[TWEET_ID_FIELD]."\n");
-                }
+                print("SKIPPED: ".json_encode($entry)."\n");
               }
             }
           }
