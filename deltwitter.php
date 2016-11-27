@@ -1,6 +1,6 @@
 <?php
 
-  // deltwitter v0.0.0.0.0.0.0.0.0.3
+  // deltwitter v0.0.0.0.0.0.0.0.0.3.1
   //
   // Copyright (c) 2016, Kenneth Newwood
   // All rights reserved.
@@ -59,12 +59,6 @@
   // This application is released under the BSD license.
   // See the LICENSE file for further information.
 
-  // some composer magic
-  require(__DIR__."/vendor/autoload.php");
-
-  // we use the TwitterOAuth class
-  use Abraham\TwitterOAuth\TwitterOAuth;
-
   // configure according to apps.twitter.com
   define("CONSUMER_KEY",        "");
   define("CONSUMER_SECRET",     "");
@@ -72,6 +66,12 @@
   define("ACCESS_TOKEN_SECRET", "");
 
   // ========== STOP EDITING HERE IF YOU DO NOT KNOW WHAT YOU ARE DOING ==========
+
+  // some composer magic
+  require(__DIR__."/vendor/autoload.php");
+
+  // we use the TwitterOAuth class
+  use Abraham\TwitterOAuth\TwitterOAuth;
 
   // static definition of success return code
   define("SUCCESS_CODE", 200);
