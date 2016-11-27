@@ -1,35 +1,32 @@
 <?php
 
-  // deltwitter v0.0.0.0.0.0.0.0.0.2
+  // deltwitter v0.0.0.0.0.0.0.0.0.3
   //
   // Copyright (c) 2016, Kenneth Newwood
   // All rights reserved.
   //
   // This script is a one-off approach to deleting all tweets and retweets
-  // ever done on twitter by a given user account. It does not use the
-  // official twitter API but rather reuses the REST endpoints of the
-  // twitter.com website that don't seem to have any limit restrictions.
-  //
-  // The author of this script assures you that it has worked properly at
-  // the time of writing. The author also assures you that this script
-  // will NOT be updated in case the inner workings of the twitter.com
-  // website change. If it does not work anymore you're on your own to
-  // figure out what's broken and how to fix it.
+  // ever done on twitter by a given user account. It uses the TwitterOAuth
+  // library to access the official twitter API.
   //
   // Preparation:
-  // * In order to use this script you first have to log into the
-  //   twitter.com website, start your preferred HTTP request interceptor
-  //   (e.g. HTTP Live Headers for Mozilla Firefox) and capture the request
-  //   that's sent when deleting a tweet by hand.
-  // * The request will contain a lot of cookie values that you will have
-  //   to configure down below. It's best to also set the USER_AGENT constant
-  //   to the one of your browser. The constants in the script are named after
-  //   their corresponding cookie value names.
-  // * In addition you will have to request your twitter archive through your
+  // * Log in to twitter.com and visit apps.twitter.com.
+  // * Click on "Create New App" and enter the requested, mandatory
+  //   information, agree to the Twitter Developer Agreement and click on
+  //   "Create your Twitter application".
+  // * Visit the "Keys and Access Tokens" tab and note the "Consumer Key" and
+  //   "Consumer Secret" value for the configuration of this script.
+  // * Scroll down to the "Your Access Token" and click on "Create my access
+  //   token". Note the "Access Token" and "Access Token Secret" value for
+  //   the configuration of this script.
+  // * Enter the folder in which you downloaded this script with a command
+  //   shell and execute "composer require abraham/twitteroauth" to install
+  //   the TwitterOAuth library.
+  // * Then you will have to request your twitter archive through your
   //   account settings page. It may take a while until you receive the
   //   corresponding download link.
   // * The twitter archive contains a file called "tweets.csv" that you have
-  //   to use together with the script.
+  //   to use as the first parameter for the script.
   // * Now you can execute the script by calling it and providing the path to
   //   the tweets.csv file along. Depending on the number of tweets and
   //   retweets you have this process may take a while.
@@ -48,69 +45,44 @@
   //   NOT care to handle any corner cases except multi-line values and
   //   escaped quotation marks. If this CSV parser fails for you, your
   //   totally free to fix it for your special cases. You've been warned.
-  // * This script does not care to escape any values, be it parts of URLs,
-  //   HTTP headers or even shell parameters. You'd be totally stupid to
-  //   call this script with untrusted parameters. You've been warned.
-  // * Twitter actually fucked up the retweet feature. It so happens that
-  //   tweets you retweeted some time ago are added to your tweet count,
-  //   archive and timeline, but cannot be easily unretweeted. The only
-  //   way seems to be to retweet these tweets again and directly unretweet
-  //   them. This, however, leads to annoying glitches in all sorts of twitter
-  //   clients, which is the reason why unretweeting of tweets is throttled.
   // * This script was written with the intention to be a lowest-effort
   //   approach to automating the deletion of tweets and retweets. If
   //   it breaks anything, it's up to you to fix it. There will be
   //   absolutely no support given to anyone using this script. You've
   //   been warned.
+  // * It seems to be impossible to delete retweets of people that have
+  //   set their accounts to protected afterwards if you don't follow them.
+  // * The twitter API runs into timeouts from time to time leading to an
+  //   exception in the TwitterOAuth library. Just restart the script with
+  //   the last twitter id. The resume feature is fast enough.
   //
   // This application is released under the BSD license.
   // See the LICENSE file for further information.
 
-  // configure by knowledge
-  define("USERNAME", ""); // this is meant to contain your twitter username in all lowercase
+  // some composer magic
+  require(__DIR__."/vendor/autoload.php");
 
-  // configure by desire
-  define("UNRETWEET_THROTTLE", 60); // this meant to contain the number of seconds between unretweets
+  // we use the TwitterOAuth class
+  use Abraham\TwitterOAuth\TwitterOAuth;
 
-  // configure according to logged in browser headers
-  define("_TWITTER_SESS",      ""); // this is meant to contain the "_twitter_sess" cookie value
-  define("AUTH_TOKEN",         ""); // this is meant to contain the "auth_token" cookie value
-  define("AUTHENTICITY_TOKEN", ""); // this is meant to contain the "authenticity_token" post data value
-  define("KDT",                ""); // this is meant to contain the "kdt" cookie value
-  define("GUEST_ID",           ""); // this is meant to contain the "guest_id" cookie value
-  define("TWID",               "\\\"u=\\\""); // this is meant to contain the "twid" cookie value
-  define("USER_AGENT",         ""); // this is meant to contain a normal-looking user-agent string
+  // configure according to apps.twitter.com
+  define("CONSUMER_KEY",        "");
+  define("CONSUMER_SECRET",     "");
+  define("ACCESS_TOKEN",        "");
+  define("ACCESS_TOKEN_SECRET", "");
 
   // ========== STOP EDITING HERE IF YOU DO NOT KNOW WHAT YOU ARE DOING ==========
 
-  // static definitions of placeholders
-  define("ID_PLACEHOLDER",      "<%ID%>");
-  define("METHOD_PLACEHOLDER",  "<%METHOD%>");
-  define("REFERER_PLACEHOLDER", "<%REFERER%>");
-  define("URL_PLACEHOLDER",     "<%URL%>");
-
-  // static definitions of URLs
-  define("DELETE_REFERER",    USERNAME."/status/<%ID%>");
-  define("DELETE_URL",        "https://twitter.com/i/tweet/destroy");
-  define("RETWEET_REFERER",   "");
-  define("RETWEET_URL",       "https://twitter.com/i/tweet/retweet");
-  define("UNRETWEET_REFERER", "");
-  define("UNRETWEET_URL",     "https://twitter.com/i/tweet/unretweet");
-
   // static definition of success return code
-  define("SUCCESS_CODE", "200");
-
-  // static definition of command
-  define("COMMAND", "curl -s -o /dev/null -w \"%{http_code}\" -X POST -A \"".USER_AGENT."\" -H \"content-type: application/x-www-form-urlencoded; charset=UTF-8\" -H \"x-requested-with: XMLHttpRequest\" -H \"cookie: guest_id=".GUEST_ID."\" -H \"cookie: eu_cn=1\" -H \"cookie: kdt=".KDT."\" -H \"cookie: remember_checked_on=1\" -H \"cookie: twid=".TWID."\" -H \"cookie: auth_token=".AUTH_TOKEN."\" -H \"cookie: _gat=1\" -H \"cookie: _twitter_sess="._TWITTER_SESS."\" -e \"https://twitter.com/".REFERER_PLACEHOLDER."\" -d \"_method=DELETE&authenticity_token=".AUTHENTICITY_TOKEN."&id=".ID_PLACEHOLDER."\" \"".URL_PLACEHOLDER."\"");
+  define("SUCCESS_CODE", 200);
 
   // static definitions of special characters
   define("NF", ",");  // new field
   define("NL", "\n"); // new line
   define("SI", "\""); // string identifier
 
-  // static definitions of CSV fields
-  define("RETWEETED_STATUS_ID_FIELD", "retweeted_status_id");
-  define("TWEET_ID_FIELD",            "tweet_id");
+  // static definition of CSV field
+  define("TWEET_ID_FIELD", "tweet_id");
 
   // global variables to represent state
   $content   = null; // content of CSV file
@@ -118,51 +90,8 @@
   $entry     = null; // currently read CSV record
   $length    = null; // length of content
   $nex       = null; // next character (look-ahead)
-  $position  = -1;   // current position within string
+  $position  = 0;    // current position within string
   $structure = null; // structure of CSV records
-
-  function doDelete($id) {
-    return (0 === strcasecmp(shell_exec(getDeleteCommand($id)), SUCCESS_CODE));
-  }
-
-  function doRetweet($id) {
-    return (0 === strcasecmp(shell_exec(getRetweetCommand($id)), SUCCESS_CODE));
-  }
-
-  function doUnretweet($id) {
-    return (0 === strcasecmp(shell_exec(getUnretweetCommand($id)), SUCCESS_CODE));
-  }
-
-
-  function getDeleteCommand($id) {
-    return str_ireplace(URL_PLACEHOLDER,
-                        DELETE_URL,
-                        str_ireplace(ID_PLACEHOLDER,
-                                     $id,
-                                     str_ireplace(REFERER_PLACEHOLDER,
-                                                  DELETE_REFERER,
-                                                  COMMAND)));
-  }
-
-  function getRetweetCommand($id) {
-    return str_ireplace(URL_PLACEHOLDER,
-                        RETWEET_URL,
-                        str_ireplace(ID_PLACEHOLDER,
-                                     $id,
-                                     str_ireplace(REFERER_PLACEHOLDER,
-                                                  RETWEET_REFERER,
-                                                  COMMAND)));
-  }
-
-  function getUnretweetCommand($id) {
-    return str_ireplace(URL_PLACEHOLDER,
-                        UNRETWEET_URL,
-                        str_ireplace(ID_PLACEHOLDER,
-                                     $id,
-                                     str_ireplace(REFERER_PLACEHOLDER,
-                                                  UNRETWEET_REFERER,
-                                                  COMMAND)));
-  }
 
   function field_name($index) {
     global $structure;
@@ -192,22 +121,22 @@
     $nex = null;
 
     if ($position < $length) {
-      // increase position
-      $position++;
-
       // $position should be 0 at least now
-      if (0 <= $position) {
+      if ($position >= 0) {
         // set the current value correctly
         $cur = $content[$position];
 
         // when reading the last character, $nex must be null
-        if ($length-1 > $position) {
+        if ($position < $length-1) {
           $nex = $content[$position+1];
         }
 
         // we could read a character
         $result = true;
       }
+
+      // increase position
+      $position++;
     }
 
     return $result;
@@ -348,74 +277,51 @@
         }
         $started = (null === $start_id);
 
-        // set length variable
+        // set length variable and initialize position
         $length   = strlen($content);
-        $position = -1;
+        $position = 0;
 
         // read first record that contains field names
         if (next_record()) {
           // set $structure to read structure
           $structure = $entry;
 
+          // use TwitterOAuth to create connection
+          $connection = new TwitterOAuth(CONSUMER_KEY,
+                                         CONSUMER_SECRET,
+                                         ACCESS_TOKEN,
+                                         ACCESS_TOKEN_SECRET);
+
+          // set timeouts
+          $connection->setTimeouts(5, 5);
+
           // iterate through all records
           while (next_record()) {
-            // when "retweeted_status_id" field is not empty, it's a retweet
-            if (isset($entry[RETWEETED_STATUS_ID_FIELD]) && (0 < strlen($entry[RETWEETED_STATUS_ID_FIELD]))) {
-              // check if we're ready to work
+            // when "tweet_id" field is not empty, it's a tweet
+            if (isset($entry[TWEET_ID_FIELD]) && (0 < strlen($entry[TWEET_ID_FIELD]))) {
               if ($started) {
-                // undo the retweet
-                if (doUnretweet($entry[RETWEETED_STATUS_ID_FIELD])) {
-                  print("RETWEET: ".$entry[RETWEETED_STATUS_ID_FIELD]."\n");
-                } else {
-                  // try to retweet and unretweet to clean things up
-                  if (doRetweet($entry[RETWEETED_STATUS_ID_FIELD])) {
-                    // and directly undo the retweet
-                    if (doUnretweet($entry[RETWEETED_STATUS_ID_FIELD])) {
-                      print("RETWEET: ".$entry[RETWEETED_STATUS_ID_FIELD]."\n");
-                    } else {
-                      print(" FAILED: ".$entry[RETWEETED_STATUS_ID_FIELD]."\n");
-                    }
+                // execute the destroy POST request
+                $result = $connection->post("statuses/destroy/".$entry[TWEET_ID_FIELD],
+                                            ["id" => $entry[TWEET_ID_FIELD]]);
 
-                    // throttle this to be less annoying
-                    sleep(UNRETWEET_THROTTLE);
-                  } else {
-                    print(" FAILED: ".$entry[RETWEETED_STATUS_ID_FIELD]."\n");
-                  }
+                // check the return code
+                if (SUCCESS_CODE === $connection->getLastHttpCode()) {
+                  print("DELETED: ".$entry[TWEET_ID_FIELD]."\n");
+                } else {
+                  print("FAILED:  ".$entry[TWEET_ID_FIELD]."\n");
                 }
               } else {
                 // check if we've reached the ID to resume
-                $started = (0 === strcasecmp($start_id, $entry[RETWEETED_STATUS_ID_FIELD]));
+                $started = (0 === strcasecmp($start_id, $entry[TWEET_ID_FIELD]));
 
                 if ($started) {
-                  print("RESUMED: ".$entry[RETWEETED_STATUS_ID_FIELD]."\n");
+                  print("RESUMED: ".$entry[TWEET_ID_FIELD]."\n");
                 } else {
-                  print("IGNORED: ".$entry[RETWEETED_STATUS_ID_FIELD]."\n");
+                  print("IGNORED: ".$entry[TWEET_ID_FIELD]."\n");
                 }
               }
             } else {
-              // when "tweet_id" field is not empty, it's a tweet
-              if (isset($entry[TWEET_ID_FIELD]) && (0 < strlen($entry[TWEET_ID_FIELD]))) {
-                // check if we're ready to work
-                if ($started) {
-                  // delete the tweet
-                  if (doDelete($entry[TWEET_ID_FIELD])) {
-                    print("  TWEET: ".$entry[TWEET_ID_FIELD]."\n");
-                  } else {
-                    print(" FAILED: ".$entry[TWEET_ID_FIELD]."\n");
-                  }
-                } else {
-                  // check if we've reached the ID to resume
-                  $started = (0 === strcasecmp($start_id, $entry[TWEET_ID_FIELD]));
-
-                  if ($started) {
-                    print("RESUMED: ".$entry[TWEET_ID_FIELD]."\n");
-                  } else {
-                    print("IGNORED: ".$entry[TWEET_ID_FIELD]."\n");
-                  }
-                }
-              } else {
-                print("SKIPPED: ".json_encode($entry)."\n");
-              }
+              print("SKIPPED: ".json_encode($entry)."\n");
             }
           }
         } else {
