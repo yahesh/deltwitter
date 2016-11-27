@@ -1,60 +1,12 @@
 <?php
 
-  // deltwitter v0.0.0.0.0.0.0.0.0.3.1
+  // deltwitter v0.0.0.0.0.0.0.0.0.4
   //
   // Copyright (c) 2016, Kenneth Newwood
   // All rights reserved.
   //
-  // This script is a one-off approach to deleting all tweets and retweets
-  // ever done on twitter by a given user account. It uses the TwitterOAuth
-  // library to access the official twitter API.
-  //
-  // Preparation:
-  // * Log in to twitter.com and visit apps.twitter.com.
-  // * Click on "Create New App" and enter the requested, mandatory
-  //   information, agree to the Twitter Developer Agreement and click on
-  //   "Create your Twitter application".
-  // * Visit the "Keys and Access Tokens" tab and note the "Consumer Key" and
-  //   "Consumer Secret" value for the configuration of this script.
-  // * Scroll down to the "Your Access Token" and click on "Create my access
-  //   token". Note the "Access Token" and "Access Token Secret" value for
-  //   the configuration of this script.
-  // * Enter the folder in which you downloaded this script with a command
-  //   shell and execute "composer require abraham/twitteroauth" to install
-  //   the TwitterOAuth library.
-  // * Then you will have to request your twitter archive through your
-  //   account settings page. It may take a while until you receive the
-  //   corresponding download link.
-  // * The twitter archive contains a file called "tweets.csv" that you have
-  //   to use as the first parameter for the script.
-  // * Now you can execute the script by calling it and providing the path to
-  //   the tweets.csv file along. Depending on the number of tweets and
-  //   retweets you have this process may take a while.
-  // * The tweet id of every deleted tweet and retweet is printed to the screen.
-  // * Should it be necessary to abort the process and resume later, you should
-  //   save the last processed tweet id.
-  // * You can use a tweet id as an optional second parameter so that the deletion
-  //   can proceed with the next tweet or retweet in the CSV file.
-  //
   // Usage:
   // > php ./deltwitter.php "<path to tweets.csv file>" ("<tweet id to resume>")
-  //
-  // Things to note:
-  // * This script contains a super-duper hand-written top-down parser for
-  //   CSV files that uses a single look-ahead character and which does
-  //   NOT care to handle any corner cases except multi-line values and
-  //   escaped quotation marks. If this CSV parser fails for you, your
-  //   totally free to fix it for your special cases. You've been warned.
-  // * This script was written with the intention to be a lowest-effort
-  //   approach to automating the deletion of tweets and retweets. If
-  //   it breaks anything, it's up to you to fix it. There will be
-  //   absolutely no support given to anyone using this script. You've
-  //   been warned.
-  // * It seems to be impossible to delete retweets of people that have
-  //   set their accounts to protected afterwards if you don't follow them.
-  // * The twitter API runs into timeouts from time to time leading to an
-  //   exception in the TwitterOAuth library. Just restart the script with
-  //   the last twitter id. The resume feature is fast enough.
   //
   // This application is released under the BSD license.
   // See the LICENSE file for further information.
