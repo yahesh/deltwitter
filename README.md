@@ -6,7 +6,7 @@ This script is a one-off approach to deleting all tweets and retweets ever done 
 1. Log in to twitter.com and visit apps.twitter.com.
 2. Click on "Create New App" and enter the requested, mandatory information, agree to the Twitter Developer Agreement and click on "Create your Twitter application".
 3. Visit the "Keys and Access Tokens" tab and note the "Consumer Key" and "Consumer Secret" value for the configuration of this script.
-4. Scroll down to the "Your Access Token" and click on "Create my access token". Note the "Access Token" and "Access Token Secret" value for the configuration of this script.
+4. Scroll down to "Your Access Token" and click on "Create my access token". Note the "Access Token" and "Access Token Secret" value for the configuration of this script.
 5. Manually configure the script by editing the source, using the tokens you just created.
 6. Enter the folder in which you downloaded this script with a command shell and execute ```composer require abraham/twitteroauth``` to install the TwitterOAuth library.
 7. Then you will have to request your twitter archive through your account settings page. It may take a while until you receive the corresponding download link.
