@@ -28,7 +28,7 @@ php ./deltwitter.php "<path to tweets.csv file>" ("<tweet id to resume>")
 * The twitter API runs into timeouts from time to time leading to an exception in the TwitterOAuth library. Just restart the script with the last tweet id. The resume feature is fast enough.
 
 ## License
-This application is released under the BSD license.
+This application is released under the MIT license.
 See the [LICENSE](LICENSE) file for further information.
 
 ## Copyright
