@@ -25,7 +25,7 @@ php ./deltwitter.php "<path to tweets.csv file>" ("<tweet id to resume>")
 * This script contains a super-duper hand-written top-down parser for CSV files that uses a single look-ahead character and which does NOT care to handle any corner cases except multi-line values and escaped quotation marks. If this CSV parser fails for you, you are totally free to fix it for your special cases. You have been warned.
 * This script was written with the intention to be a lowest-effort approach to automating the deletion of tweets and retweets. If it breaks anything, it is up to you to fix it. There will be absolutely no support given to anyone using this script. You have been warned.
 * It seems to be impossible to delete retweets of people that have set their accounts to protected after retweeting them, unless you follow them.
-* The twitter API runs into timeouts from time to time leading to an exception in the TwitterOAuth library. Just restart the script with the last twitter id. The resume feature is fast enough.
+* The twitter API runs into timeouts from time to time leading to an exception in the TwitterOAuth library. Just restart the script with the last tweet id. The resume feature is fast enough.
 
 ## License
 This application is released under the BSD license.
