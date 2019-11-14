@@ -1,0 +1,8 @@
+<?php
+
+  // configure according to https://developer.twitter.com/en/apps/
+  define("API_KEY",             "");
+  define("API_SECRET_KEY",      "");
+  define("ACCESS_TOKEN",        "");
+  define("ACCESS_TOKEN_SECRET", "");
+

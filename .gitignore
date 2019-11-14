@@ -1,0 +1,14 @@
+# do not publish live config
+composer.json
+composer.lock
+config.php
+lock
+status
+vendor/*
+
+# do not publish macOS blergh
+._*
+.DS_Store
+.DS_Store?
+.Spotlight-V100
+.Trashes

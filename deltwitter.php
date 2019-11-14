@@ -1,6 +1,6 @@
 <?php
 
-  // deltwitter v0.0.0.0.0.0.0.0.0.4
+  // deltwitter v0.0.0.0.0.0.0.0.0.5
   //
   // Copyright (c) 2016-2019, Yahe
   // All rights reserved.
@@ -11,19 +11,16 @@
   // This application is released under the BSD license.
   // See the LICENSE file for further information.
 
-  // configure according to apps.twitter.com
-  define("CONSUMER_KEY",        "");
-  define("CONSUMER_SECRET",     "");
-  define("ACCESS_TOKEN",        "");
-  define("ACCESS_TOKEN_SECRET", "");
-
   // ========== STOP EDITING HERE IF YOU DO NOT KNOW WHAT YOU ARE DOING ==========
 
   // some composer magic
-  require(__DIR__."/vendor/autoload.php");
+  require_once(__DIR__."/vendor/autoload.php");
 
   // we use the TwitterOAuth class
   use Abraham\TwitterOAuth\TwitterOAuth;
+
+  // include the configuration
+  require_once(__DIR__."/config.php");
 
   // static definition of success return code
   define("SUCCESS_CODE", 200);
@@ -239,13 +236,10 @@
           $structure = $entry;
 
           // use TwitterOAuth to create connection
-          $connection = new TwitterOAuth(CONSUMER_KEY,
-                                         CONSUMER_SECRET,
-                                         ACCESS_TOKEN,
-                                         ACCESS_TOKEN_SECRET);
+          $connection = new TwitterOAuth(API_KEY, API_SECRET_KEY, ACCESS_TOKEN, ACCESS_TOKEN_SECRET);
 
           // set timeouts
-          $connection->setTimeouts(5, 5);
+          $connection->setTimeouts(30, 30);
 
           // iterate through all records
           while (next_record()) {
