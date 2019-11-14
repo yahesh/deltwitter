@@ -2,7 +2,7 @@
 
   // deltwitter v0.0.0.0.0.0.0.0.0.4
   //
-  // Copyright (c) 2016, Kenneth Newwood
+  // Copyright (c) 2016-2019, Yahe
   // All rights reserved.
   //
   // Usage:

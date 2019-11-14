@@ -32,6 +32,6 @@ This application is released under the MIT license.
 See the [LICENSE](LICENSE) file for further information.
 
 ## Copyright
-Copyright (c) 2016-2018, Kenneth Newwood
+Copyright (c) 2016-2019, Yahe
 
 All rights reserved.
