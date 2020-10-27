@@ -7,7 +7,7 @@
   // All rights reserved.
   //
   // Usage:
-  // > php ./deltwitter.php "<path to tweet.js file>" ("<tweet id to resume>")
+  // > ./deltwitter.php "<path to tweet.js file>" ("<tweet id to resume>")
   //
   // If you want to know which IDs are contained in the file and which creation
   // date they have then provide a non-numeric tweet ID as a second parameter.
