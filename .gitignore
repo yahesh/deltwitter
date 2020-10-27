@@ -2,8 +2,6 @@
 composer.json
 composer.lock
 config.php
-lock
-status
 vendor/*
 
 # do not publish macOS blergh

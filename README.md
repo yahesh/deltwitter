@@ -10,7 +10,7 @@ This script is a one-off approach to deleting all tweets and retweets ever done 
 5. Enter the folder in which you downloaded this script with a command shell and execute ```composer require abraham/twitteroauth``` to install the TwitterOAuth library.
 6. Copy `config.php.default` to `config.php` and configure the script.
 7. Then you will have to request your Twitter archive through your account settings page. It may take a while until you receive the corresponding download link.
-8. The Twitter archive contains a file called "tweet.js" that you have to use as the first parameter for the script.
+8. The Twitter archive contains a file called `data/tweet.js` that you have to use as the first parameter for the script.
 9. Now you can execute the script by calling it and providing the path to the tweet.js file along. Depending on the number of tweets and retweets you have this process may take a while.
 10. The tweet id of every deleted tweet and retweet is printed to the screen.
 11. Should it be necessary to abort the process and resume later, you should save the last processed tweet id.
@@ -20,6 +20,8 @@ This script is a one-off approach to deleting all tweets and retweets ever done 
 ```
 php ./deltwitter.php "<path to tweet.js file>" ("<tweet id to resume>")
 ```
+
+If you want to know which IDs are contained in the file and which creation date they have then provide a non-numeric tweet ID as a second parameter.
 
 ## Things to note
 * This script was written with the intention to be a lowest-effort approach to automating the deletion of tweets and retweets. If it breaks anything, it is up to you to fix it. There will be absolutely no support given to anyone using this script. You have been warned.
