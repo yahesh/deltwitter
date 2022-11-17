@@ -33,6 +33,6 @@ This application is released under the MIT license.
 See the [LICENSE](LICENSE) file for further information.
 
 ## Copyright
-Copyright (c) 2016-2020, Yahe
+Copyright (c) 2016-2022, Yahe
 
 All rights reserved.

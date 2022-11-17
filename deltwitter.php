@@ -1,9 +1,9 @@
-#!/usr/bin/php
+#!/usr/bin/env php
 <?php
 
-  // deltwitter v0.7b0
+  // deltwitter v0.8b0
   //
-  // Copyright (c) 2016-2020, Yahe
+  // Copyright (c) 2016-2022, Yahe
   // All rights reserved.
   //
   // Usage:
@@ -30,7 +30,7 @@
   define("SUCCESS_CODE", 200);
 
   // static definition of JS field
-  define("TWEET_ARRAY_PREFIX",     "window.YTD.tweet.part0 =");
+  define("TWEET_ARRAY_PREFIX",     "window.YTD.tweets.part0 =");
   define("TWEET_FIELD",            "tweet");
   define("TWEET_CREATED_AT_FIELD", "created_at");
   define("TWEET_ID_FIELD",         "id");
