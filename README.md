@@ -1,5 +1,7 @@
 # deltwitter
 
+**WARNING: Twitter has announced to limit its free API to post-only functionality, so this script might not work for you anymore as early as February 9th, 2023.**
+
 This script is a one-off approach to deleting all tweets and retweets ever done on twitter by a given user account. It uses the [TwitterOAuth](https://twitteroauth.com) library to access the official Twitter API.
 
 ## Preparation
@@ -38,6 +40,6 @@ This application is released under the MIT license.
 See the [LICENSE](LICENSE) file for further information.
 
 ## Copyright
-Copyright (c) 2016-2022, Yahe
+Copyright (c) 2016-2023, Yahe
 
 All rights reserved.

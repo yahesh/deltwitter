@@ -3,7 +3,7 @@
 
   // deltwitter v0.8b0
   //
-  // Copyright (c) 2016-2022, Yahe
+  // Copyright (c) 2016-2023, Yahe
   // All rights reserved.
   //
   // Usage:
